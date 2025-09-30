@@ -2,7 +2,7 @@ export const courses = [
   {
     id: "augusta",
     name: "Augusta Green",
-    image: "public/images/courses/augusta.jpg",
+    image: "https://picsum.photos/seed/augusta/400/250",
     status: "Active",
     revenue: 25000,
     bookings: 120,
@@ -10,7 +10,7 @@ export const courses = [
   {
     id: "pinehurst",
     name: "Pinehurst Links",
-    image: "public/images/courses/pinehurst.jpg",
+    image: "https://picsum.photos/seed/pinehurst/400/250",
     status: "Maintenance",
     revenue: 18500,
     bookings: 95,
@@ -18,7 +18,7 @@ export const courses = [
   {
     id: "oceanview",
     name: "Oceanview Country Club",
-    image: "public/images/courses/oceanview.jpg",
+    image: "https://picsum.photos/seed/oceanview/400/250",
     status: "Active",
     revenue: 32000,
     bookings: 150,
@@ -26,7 +26,7 @@ export const courses = [
   {
     id: "desert",
     name: "Desert Oasis Golf",
-    image: "public/images/courses/desert.jpg",
+    image: "https://picsum.photos/seed/desert/400/250",
     status: "Active",
     revenue: 15000,
     bookings: 80,
@@ -34,7 +34,7 @@ export const courses = [
   {
     id: "highland",
     name: "Highland Greens",
-    image: "public/images/courses/highland.jpg",
+    image: "https://picsum.photos/seed/highland/400/250",
     status: "Active",
     revenue: 20000,
     bookings: 110,
