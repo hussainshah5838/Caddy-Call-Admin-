@@ -1,0 +1,42 @@
+export const courses = [
+  {
+    id: "augusta",
+    name: "Augusta Green",
+    image: "public/images/courses/augusta.jpg",
+    status: "Active",
+    revenue: 25000,
+    bookings: 120,
+  },
+  {
+    id: "pinehurst",
+    name: "Pinehurst Links",
+    image: "public/images/courses/pinehurst.jpg",
+    status: "Maintenance",
+    revenue: 18500,
+    bookings: 95,
+  },
+  {
+    id: "oceanview",
+    name: "Oceanview Country Club",
+    image: "public/images/courses/oceanview.jpg",
+    status: "Active",
+    revenue: 32000,
+    bookings: 150,
+  },
+  {
+    id: "desert",
+    name: "Desert Oasis Golf",
+    image: "public/images/courses/desert.jpg",
+    status: "Active",
+    revenue: 15000,
+    bookings: 80,
+  },
+  {
+    id: "highland",
+    name: "Highland Greens",
+    image: "public/images/courses/highland.jpg",
+    status: "Active",
+    revenue: 20000,
+    bookings: 110,
+  },
+];
