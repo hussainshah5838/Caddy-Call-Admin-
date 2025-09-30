@@ -6,7 +6,7 @@ import DashboardLayout from "../layouts/SiteLayout";
 
 // Pages
 import DashboardContent from "../Pages/MainDashboard";
-import CoursesPage from "../pages/CoursesPage";
+import CoursesPage from "../Pages/CoursesPage";
 import CoursesAdd from "../Pages/CoursesAdd";
 import CoursesEdit from "../Pages/CoursesEdit";
 
@@ -17,9 +17,9 @@ import UsersEdit from "../Pages/UsersEdit";
 import MenuManagementPage from "../Pages/MenuManagementPage";
 import NotificationsPage from "../Pages/NotificationsPage";
 import SettingsPage from "../Pages/SettingsPage";
-import AccountPage from "../pages/AccountPage";
+import AccountPage from "../Pages/AccountPage";
 
-import LoginPage from "../pages/Auth/Login";
+import LoginPage from "../Pages/Auth/Login";
 import ProfilePage from "../Pages/ProfilePage";
 import MessagesPage from "../Pages/MessagesPage";
 
