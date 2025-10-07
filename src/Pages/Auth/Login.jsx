@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MdVisibility, MdVisibilityOff, MdMail, MdLock } from "react-icons/md";
+import { useAuth } from "../../context/AuthContext.jsx";
 
 const inputBase =
   "w-full rounded-md border border-gray-200 bg-white px-3 py-2.5 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/60";
@@ -9,6 +10,7 @@ const BASE = import.meta.env.BASE_URL || "/";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [form, setForm] = useState({ email: "", password: "", remember: true });
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,11 +25,8 @@ export default function LoginPage() {
 
     try {
       setLoading(true);
-      // TODO: call your auth endpoint here
-      // await api.post('/auth/login', form)
-      console.log("LOGIN", form);
-      // redirect after success:
-      navigate('/')
+      await login({ email: form.email, password: form.password });
+      navigate('/');
     } catch (e) {
       setErr("Invalid credentials. Please try again.");
     } finally {

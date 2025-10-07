@@ -3,14 +3,23 @@ import useMenu from "../hooks/useMenu";
 import MenuList from "../Components/menu/MenuList";
 import MenuEditor from "../Components/menu/MenuEditor";
 import AssetsPanel from "../Components/menu/AssetsPanel";
+import { useNavigate, useParams } from "react-router-dom";
 
 export default function MenuManagement() {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const M = useMenu();
 
   return (
     <div className="space-y-5">
       {/* Header */}
       <div className="px-1">
+        <button
+          className="px-3 py-1.5 rounded border border-gray-200 text-sm"
+          onClick={() => navigate(-1)}
+        >
+          Back
+        </button>
         <h1 className="text-xl font-semibold text-gray-900">Menu Management</h1>
         <p className="text-sm text-gray-500">
           Manage menu items, descriptions, pricing, and visual assets.

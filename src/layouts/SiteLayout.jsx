@@ -2,9 +2,11 @@ import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import LeftSidebar from "../Components/ui/section/LeftSidebar";
 import Header from "../Components/ui/section/Header";
+import { useAuth } from "../context/AuthContext.jsx";
 
 const DashboardLayout = () => {
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-white flex">
@@ -16,7 +18,7 @@ const DashboardLayout = () => {
         <Header
           title="GolfLink Admin"
           logoSrc="/logo.png"
-          avatarSrc="public/profile.png"
+          avatarSrc={user?.avatar || "public/profile.png"}
           notifications={9}
           onMenuClick={() => setLeftSidebarOpen(true)}
           onNotificationClick={() => console.log("open notifications")}

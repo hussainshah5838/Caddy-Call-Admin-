@@ -10,32 +10,45 @@ import {
 } from "react-icons/md";
 import { Link, useLocation } from "react-router-dom";
 import { IoClose } from "react-icons/io5";
-import React from "react";
+import React, { useMemo } from "react";
+import { useAuth } from "../../../context/AuthContext.jsx";
+import { hasAccess } from "../../../routes/RequireAccess.jsx";
 
 const NAV = [
   { icon: MdDashboard, label: "Dashboard", path: "/" },
-  { icon: MdGolfCourse, label: "Courses", path: "/courses" },
-  { icon: MdPeople, label: "Users", path: "/users" },
-  { icon: MdBarChart, label: "Menu Management", path: "/menu" },
+  { icon: MdGolfCourse, label: "Courses", path: "/courses", kinds: ["admin", "staff"] },
+  { icon: MdPeople, label: "Users", path: "/users", kinds: ["admin"] },
+  {
+    icon: MdBarChart,
+    label: "Menu Management",
+    path: "/menu",
+    kinds: ["admin", "staff"],
+    roles: ["Course Admin", "Kitchen Staff"],
+  },
   {
     icon: MdNotifications,
     label: "Notifications",
     path: "/notifications",
     badge: 9,
   },
-  { icon: MdSettings, label: "Settings", path: "/settings" },
+  { icon: MdSettings, label: "Settings", path: "/settings", kinds: ["admin"] },
 ];
 
 export default function LeftSidebar({ isOpen, setIsOpen }) {
   const { pathname } = useLocation();
+  const { user, logout } = useAuth();
 
   const isActive = (p) =>
     p === "/" ? pathname === "/" : pathname.startsWith(p);
 
   const handleLogout = () => {
-    localStorage.clear();
-    sessionStorage.clear();
+    logout();
   };
+
+  const filteredNav = useMemo(() => {
+    if (!user) return [];
+    return NAV.filter((item) => hasAccess(user, item.kinds, item.roles));
+  }, [user]);
 
   return (
     <>
@@ -68,7 +81,7 @@ export default function LeftSidebar({ isOpen, setIsOpen }) {
         {/* nav */}
         <nav className="flex-1 px-3 py-4">
           <ul className="space-y-2">
-            {NAV.map((item) => {
+            {filteredNav.map((item) => {
               const active = isActive(item.path);
               return (
                 <li key={item.label}>
