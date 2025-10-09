@@ -14,15 +14,17 @@ export default function MenuManagement() {
     <div className="space-y-5">
       {/* Header */}
       <div className="px-1">
-        <button
-          className="px-3 py-1.5 rounded border border-gray-200 text-sm"
-          onClick={() => navigate(-1)}
-        >
-          Back
-        </button>
-        <h1 className="text-xl font-semibold text-gray-900">Menu Management</h1>
+        <h1 className="text-xl font-semibold text-gray-900">
+          <button
+            className="px-3 py-1.5 rounded border border-gray-200 text-sm"
+            onClick={() => navigate(-1)}
+          >
+            Back
+          </button>
+          Menu Management
+        </h1>
         <p className="text-sm text-gray-500">
-          Manage menu items, descriptions, pricing, and visual assets.
+          Your's menu items, descriptions, pricing, and visual assets.
         </p>
       </div>
 

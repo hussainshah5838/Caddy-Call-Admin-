@@ -84,9 +84,7 @@ export default function MenuListPage() {
               <th className="px-4 py-3 font-medium">Location</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Hours</th>
-              <th className="px-4 py-3 font-medium">Map</th>
-              {/* <th className="px-4 py-3 font-medium">Assigned Admins</th> */}
-              <th className="px-4 py-3 font-medium">Actions</th>
+              <th className="px-4 py-3 font-medium">View Details</th>
             </tr>
           </thead>
           <tbody>
@@ -124,27 +122,7 @@ export default function MenuListPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3 text-gray-700">{c.hours}</td>
-                <td className="px-4 py-3">
-                  <a
-                    href={c.mapUrl}
-                    className="inline-flex items-center gap-1 text-gray-500 hover:text-gray-700"
-                  >
-                    <MdContentCopy className="h-4 w-4" /> Map
-                  </a>
-                </td>
-                {/* <td className="px-4 py-3">
-                  <div className="flex -space-x-2">
-                    {(c.admins || []).map((src, i) => (
-                      <img
-                        key={i}
-                        src={src}
-                        alt=""
-                        className="h-7 w-7 rounded-full border-2 border-white object-cover"
-                      />
-                    ))}
-                  </div>
-                </td> */}
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 text-center">
                   <div className="flex items-center gap-3 text-gray-500">
                     <button
                       onClick={() => onView(c)}
@@ -152,20 +130,6 @@ export default function MenuListPage() {
                       title="View"
                     >
                       <MdVisibility className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => onEdit(c)}
-                      className="hover:text-gray-700"
-                      title="Edit"
-                    >
-                      <MdEdit className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(c)}
-                      className="hover:text-rose-600"
-                      title="Delete"
-                    >
-                      <MdDelete className="h-5 w-5" />
                     </button>
                   </div>
                 </td>
