@@ -21,7 +21,7 @@ const ActivityFeed = React.memo(function ActivityFeed({ items = [] }) {
         Latest updates and events across the platform.
       </p>
 
-      <ol className="space-y-4">
+      <ol className="space-y-4 max-h-52 overflow-y-auto pr-1">
         {items.map((it) => {
           const Icon = ICONS[it.icon] || MdUpdate;
           return (

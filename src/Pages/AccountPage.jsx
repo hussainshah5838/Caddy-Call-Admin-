@@ -1,19 +1,23 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { MdPhotoCamera, MdWarning } from "react-icons/md";
+import { useNavigate } from "react-router-dom";
 import Card from "../Components/account/Card";
 import Field from "../Components/account/Field";
 import Input from "../Components/account/Input";
 import Select from "../Components/account/Select";
 import Toggle from "../Components/account/Toggle";
 import ConfirmModal from "../Components/account/ConfirmModal";
+import { useAuth } from "../context/AuthContext";
 
-/* ---------- mock data (replace with API data) ---------- */
-const mockUser = {
-  id: "admin-1",
-  name: "Avery Admin",
-  email: "admin@golflink.example",
-  phone: "+1 (555) 010-9988",
-  avatar: "/me.jpg",
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
+const emptyUser = {
+  id: "",
+  name: "",
+  email: "",
+  phone: "",
+  avatar: "",
   org: "GolfLink",
   role: "Super Admin",
   timezone: "America/Los_Angeles",
@@ -32,10 +36,18 @@ const locales = ["en-US", "en-GB", "de-DE", "fr-FR", "es-ES", "ja-JP"];
 
 /* ---------- page ---------- */
 export default function AccountPage() {
-  const [user, setUser] = useState(mockUser);
+  const nav = useNavigate();
+  const { logout } = useAuth();
+  const [user, setUser] = useState(emptyUser);
   const [pwd, setPwd] = useState({ current: "", next: "", confirm: "" });
-  const [avatarUrl, setAvatarUrl] = useState(user.avatar || `https://i.pravatar.cc/128?u=${user.email}`);
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [avatarFile, setAvatarFile] = useState(null);
   const [showDanger, setShowDanger] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const fileRef = useRef(null);
 
   const pwdValid = useMemo(
@@ -44,10 +56,145 @@ export default function AccountPage() {
       /[0-9]/.test(pwd.next) && pwd.next === pwd.confirm,
     [pwd]
   );
+  const passwordHint = useMemo(() => {
+    if (!pwd.current) return "Enter current password.";
+    if (pwd.confirm && pwd.next !== pwd.confirm) {
+      return "Confirm password does not match the new password.";
+    }
+    const meetsPolicy =
+      pwd.next.length >= 8 &&
+      /[A-Z]/.test(pwd.next) &&
+      /[a-z]/.test(pwd.next) &&
+      /[0-9]/.test(pwd.next);
+    if (!meetsPolicy) {
+      return "Password must be 8+ chars with uppercase, lowercase and number.";
+    }
+    return "";
+  }, [pwd.current, pwd.next, pwd.confirm]);
 
-  /* ---- handlers (wire to API) ---- */
-  const onSaveProfile = () => {
-    console.log("Save profile", { name: user.name, email: user.email, phone: user.phone, avatarUrl });
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchProfile = async () => {
+      const token = localStorage.getItem("auth:token");
+      if (!token) {
+        if (isMounted) {
+          setError("Authentication token not found.");
+          setLoadingProfile(false);
+        }
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/users/me/profile`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data?.success || !data?.user) {
+          throw new Error(data?.message || "Failed to fetch profile.");
+        }
+
+        const profile = data.user;
+        if (isMounted) {
+          setUser((prev) => ({
+            ...prev,
+            id: profile?._id || "",
+            name: profile?.name || "",
+            email: profile?.email || "",
+            phone: profile?.phoneNo || "",
+            avatar: profile?.photo || "",
+            role: profile?.role === "superadmin" ? "Super Admin" : (profile?.role || "Super Admin"),
+          }));
+          setAvatarUrl(
+            profile?.photo || `https://i.pravatar.cc/128?u=${profile?.email || "super-admin"}`
+          );
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err?.message || "Failed to fetch profile.");
+        }
+      } finally {
+        if (isMounted) setLoadingProfile(false);
+      }
+    };
+
+    fetchProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  /* ---- handlers ---- */
+  const onSaveProfile = async () => {
+    if (savingProfile) return;
+    const token = localStorage.getItem("auth:token");
+    if (!token) {
+      setError("Authentication token not found.");
+      return;
+    }
+
+    setSavingProfile(true);
+    setError("");
+    setSuccess("");
+    try {
+      let photoUrl;
+      if (avatarFile) {
+        const fd = new FormData();
+        fd.append("image", avatarFile);
+        const uploadRes = await fetch(`${API_BASE_URL}/upload/image`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: fd,
+        });
+        const uploadData = await uploadRes.json().catch(() => ({}));
+        if (!uploadRes.ok || !uploadData?.success || !uploadData?.imageUrl) {
+          throw new Error(uploadData?.message || "Failed to upload profile image.");
+        }
+        photoUrl = uploadData.imageUrl;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/users/me/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: user.name,
+          email: user.email,
+          phoneNo: user.phone,
+          ...(photoUrl !== undefined ? { photo: photoUrl } : {}),
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.success || !data?.user) {
+        throw new Error(data?.message || "Failed to update profile.");
+      }
+
+      const updatedUser = data.user;
+      setUser((prev) => ({
+        ...prev,
+        name: updatedUser?.name || prev.name,
+        email: updatedUser?.email || prev.email,
+        phone: updatedUser?.phoneNo || "",
+        avatar: updatedUser?.photo || "",
+      }));
+      setAvatarUrl(
+        updatedUser?.photo || `https://i.pravatar.cc/128?u=${updatedUser?.email || user.email}`
+      );
+      setAvatarFile(null);
+      setSuccess(data?.message || "Profile updated successfully.");
+    } catch (err) {
+      setError(err?.message || "Failed to update profile.");
+    } finally {
+      setSavingProfile(false);
+    }
   };
   const onSavePrefs = () => {
     console.log("Save prefs", {
@@ -55,24 +202,101 @@ export default function AccountPage() {
       notifyEmail: user.notifyEmail, notifyPush: user.notifyPush,
     });
   };
-  const onChangePassword = () => {
-    console.log("Change password", pwd);
-    setPwd({ current: "", next: "", confirm: "" });
+  const onChangePassword = async () => {
+    if (changingPassword) return;
+    const token = localStorage.getItem("auth:token");
+    if (!token) {
+      setError("Authentication token not found.");
+      return;
+    }
+
+    setChangingPassword(true);
+    setError("");
+    setSuccess("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/me/password`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          currentPassword: pwd.current,
+          newPassword: pwd.next,
+          confirmPassword: pwd.confirm,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to change password.");
+      }
+
+      setPwd({ current: "", next: "", confirm: "" });
+      setSuccess(data?.message || "Password updated successfully.");
+    } catch (err) {
+      setError(err?.message || "Failed to change password.");
+    } finally {
+      setChangingPassword(false);
+    }
   };
   const onToggle2FA = (v) => setUser((u) => ({ ...u, twoFactor: v }));
-  const onDeleteAccount = () => console.log("Delete account requested");
+  const onDeleteAccount = async () => {
+    const token = localStorage.getItem("auth:token");
+    if (!token) {
+      setError("Authentication token not found.");
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/me`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to delete account.");
+      }
+
+      logout();
+      nav("/auth/login", { replace: true });
+    } catch (err) {
+      setError(err?.message || "Failed to delete account.");
+    }
+  };
 
   const pickFile = () => fileRef.current?.click();
   const onAvatarFile = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    const url = URL.createObjectURL(f);
     if (avatarUrl.startsWith("blob:")) URL.revokeObjectURL(avatarUrl);
-    setAvatarUrl(url);
+    setAvatarFile(f);
+    setAvatarUrl(URL.createObjectURL(f));
   };
+
+  if (loadingProfile) {
+    return (
+      <div className="p-6">
+        <p className="text-sm text-gray-500">Loading profile...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          {success}
+        </div>
+      )}
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Account</h1>
         <p className="text-sm text-gray-500">Manage your admin profile, security, and preferences.</p>
@@ -87,7 +311,9 @@ export default function AccountPage() {
                 <img
                   src={avatarUrl}
                   alt="Avatar"
-                  className="h-20 w-20 rounded-full object-cover border border-gray-200"
+                  className="h-20 w-20 rounded-full object-cover border border-gray-200 cursor-pointer"
+                  onClick={pickFile}
+                  title="Change avatar"
                   onError={(e) => { e.currentTarget.src = `https://i.pravatar.cc/128?u=${user.email}`; }}
                 />
                 <button
@@ -120,8 +346,16 @@ export default function AccountPage() {
             </div>
 
             <div className="mt-4">
-              <button onClick={onSaveProfile} className="rounded-md bg-emerald-700 text-white px-4 py-2 text-sm hover:bg-emerald-800">
-                Save Profile
+              <button
+                onClick={onSaveProfile}
+                disabled={savingProfile}
+                className={`rounded-md px-4 py-2 text-sm text-white ${
+                  savingProfile
+                    ? "bg-gray-300 cursor-not-allowed"
+                    : "bg-emerald-700 hover:bg-emerald-800"
+                }`}
+              >
+                {savingProfile ? "Saving..." : "Save Profile"}
               </button>
             </div>
           </Card>
@@ -140,14 +374,27 @@ export default function AccountPage() {
             </div>
 
             <div className="mt-3 flex items-center justify-between">
-              <Toggle checked={user.twoFactor} onChange={onToggle2FA} label="Enable Two-Factor Authentication" />
-              <button
-                onClick={onChangePassword}
-                disabled={!pwdValid || !pwd.current}
-                className={`rounded-md px-4 py-2 text-sm text-white ${pwdValid && pwd.current ? "bg-emerald-700 hover:bg-emerald-800" : "bg-gray-300 cursor-not-allowed"}`}
-              >
-                Change Password
-              </button>
+              <div className="hidden">
+                <Toggle checked={user.twoFactor} onChange={onToggle2FA} label="Enable Two-Factor Authentication" />
+              </div>
+              <div className="text-right">
+                <button
+                  onClick={onChangePassword}
+                  disabled={!pwdValid || !pwd.current || changingPassword}
+                  className={`rounded-md px-4 py-2 text-sm text-white ${
+                    pwdValid && pwd.current && !changingPassword
+                      ? "bg-emerald-700 hover:bg-emerald-800"
+                      : "bg-gray-300 cursor-not-allowed"
+                  }`}
+                >
+                  {changingPassword ? "Changing..." : "Change Password"}
+                </button>
+                {passwordHint && (
+                  <p className="mt-1 text-xs text-rose-600">
+                    {passwordHint}
+                  </p>
+                )}
+              </div>
             </div>
           </Card>
         </div>
@@ -173,7 +420,7 @@ export default function AccountPage() {
                   <option value="dark">Dark</option>
                 </Select>
               </Field>
-              <div className="flex flex-col justify-center gap-3">
+              <div className="hidden flex-col justify-center gap-3">
                 <Toggle checked={user.notifyEmail} onChange={(v) => setUser((u) => ({ ...u, notifyEmail: v }))} label="Email notifications" />
                 <Toggle checked={user.notifyPush} onChange={(v) => setUser((u) => ({ ...u, notifyPush: v }))} label="Push notifications" />
               </div>

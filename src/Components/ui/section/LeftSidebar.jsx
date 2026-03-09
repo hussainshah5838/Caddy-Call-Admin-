@@ -6,13 +6,16 @@ import {
   MdNotifications,
   MdBarChart,
   MdGolfCourse,
+  MdStorefront,
   MdLogout,
 } from "react-icons/md";
 import { Link, useLocation } from "react-router-dom";
 import { IoClose } from "react-icons/io5";
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../context/AuthContext.jsx";
 import { hasAccess } from "../../../routes/RequireAccess.jsx";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 const NAV = [
   { icon: MdDashboard, label: "Dashboard", path: "/" },
@@ -23,7 +26,13 @@ const NAV = [
     label: "Menu Management",
     path: "/menu",
     kinds: ["admin", "staff"],
-    roles: ["Course Admin", "Kitchen Staff"],
+    roles: ["Super Admin", "Course Admin", "Kitchen Staff"],
+  },
+  {
+    icon: MdStorefront,
+    label: "Pro Shop",
+    path: "/pro-shop",
+    roles: ["Super Admin"],
   },
   {
     icon: MdNotifications,
@@ -34,12 +43,15 @@ const NAV = [
   { icon: MdSettings, label: "Settings", path: "/settings", kinds: ["admin"] },
 ];
 
-export default function LeftSidebar({ isOpen, setIsOpen }) {
+export default function LeftSidebar({ isOpen, setIsOpen, notificationBadge }) {
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const isActive = (p) =>
-    p === "/" ? pathname === "/" : pathname.startsWith(p);
+  const isActive = (p) => {
+    if (p === "/" || p === "/course-admin") return pathname === p;
+    return pathname === p || pathname.startsWith(`${p}/`);
+  };
 
   const handleLogout = () => {
     logout();
@@ -47,8 +59,68 @@ export default function LeftSidebar({ isOpen, setIsOpen }) {
 
   const filteredNav = useMemo(() => {
     if (!user) return [];
-    return NAV.filter((item) => hasAccess(user, item.kinds, item.roles));
-  }, [user]);
+    const badgeValue =
+      typeof notificationBadge === "number" ? notificationBadge : unreadCount;
+    const isCourseAdmin = String(user.backendRole || "").toLowerCase() === "course admin";
+    const items = NAV.filter((item) => hasAccess(user, item.kinds, item.roles));
+    return items.map((item) => {
+      if (item.label === "Dashboard" && isCourseAdmin) {
+        return { ...item, path: "/course-admin" };
+      }
+      if (item.label === "Menu Management" && isCourseAdmin) {
+        return { ...item, path: "/course-admin/menu" };
+      }
+      if (item.label === "Notifications") {
+        if (isCourseAdmin) {
+          return { ...item, path: "/course-admin/notifications", badge: badgeValue };
+        }
+        return { ...item, badge: badgeValue };
+      }
+      if (item.label === "Users" && isCourseAdmin) {
+        return { ...item, label: "Staff" };
+      }
+      return item;
+    });
+  }, [user, unreadCount, notificationBadge]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchUnreadCount = async () => {
+      if (!user) {
+        if (mounted) setUnreadCount(0);
+        return;
+      }
+
+      const token = localStorage.getItem("auth:token");
+      if (!token) {
+        if (mounted) setUnreadCount(0);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/super-admin-notifications/unread-count`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data?.success) {
+          if (mounted) setUnreadCount(Number(data?.unreadCount || 0));
+        } else if (mounted) {
+          setUnreadCount(0);
+        }
+      } catch {
+        if (mounted) setUnreadCount(0);
+      }
+    };
+
+    fetchUnreadCount();
+    return () => {
+      mounted = false;
+    };
+  }, [user, pathname]);
 
   return (
     <>

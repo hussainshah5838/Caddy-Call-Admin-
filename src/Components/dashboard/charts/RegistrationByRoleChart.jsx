@@ -31,6 +31,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 const RegistrationByRoleChart = React.memo(function RegistrationByRoleChart({
   data,
   names = { golfers: "Golfers", staff: "Staff" },
+  showGolfers = true,
 }) {
   const rows = useMemo(() => data ?? [], [data]);
 
@@ -54,13 +55,15 @@ const RegistrationByRoleChart = React.memo(function RegistrationByRoleChart({
             tickLine={{ stroke: palette.grid }}
           />
           <Tooltip content={<CustomTooltip />} />
-          <Bar
-            name={names.golfers}
-            dataKey="golfers"
-            fill={palette.primary}
-            radius={[6, 6, 0, 0]}
-            barSize={24}
-          />
+          {showGolfers && (
+            <Bar
+              name={names.golfers}
+              dataKey="golfers"
+              fill={palette.primary}
+              radius={[6, 6, 0, 0]}
+              barSize={24}
+            />
+          )}
           <Bar
             name={names.staff}
             dataKey="staff"

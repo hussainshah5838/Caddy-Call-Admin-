@@ -3,9 +3,18 @@ import React from "react";
 const badge = {
   active: "bg-emerald-50 text-emerald-700 ring-emerald-100",
   draft: "bg-gray-100 text-gray-600 ring-gray-200",
+  inactive: "bg-rose-50 text-rose-700 ring-rose-100",
 };
 
 export default React.memo(function ListItem({ item, active, onClick }) {
+  const normalizedStatus = String(item.status || "draft").toLowerCase();
+  const statusLabel =
+    normalizedStatus === "active"
+      ? "Active"
+      : normalizedStatus === "inactive"
+      ? "Inactive"
+      : "Draft";
+
   return (
     <button
       onClick={onClick}
@@ -27,10 +36,10 @@ export default React.memo(function ListItem({ item, active, onClick }) {
           <div className="truncate font-medium text-gray-900">{item.name}</div>
           <span
             className={`ml-2 shrink-0 text-[11px] px-2 py-0.5 rounded-full ring-1 ${
-              badge[item.status]
+              badge[normalizedStatus] || badge.draft
             }`}
           >
-            {item.status === "active" ? "Active" : "Draft"}
+            {statusLabel}
           </span>
         </div>
         <div className="truncate text-xs text-gray-500">{item.blurb}</div>

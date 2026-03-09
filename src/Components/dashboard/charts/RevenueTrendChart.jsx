@@ -42,7 +42,7 @@ const RevenueTrendChart = React.memo(function RevenueTrendChart({ data }) {
             tick={{ fill: palette.axis, fontSize: 12 }}
             axisLine={{ stroke: palette.grid }}
             tickLine={{ stroke: palette.grid }}
-            tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : v)}
+            tickFormatter={(v) => (v >= 1000 ? `$${v / 1000}k` : `$${v}`)}
           />
           <Tooltip content={<CustomTooltip />} />
           <Line

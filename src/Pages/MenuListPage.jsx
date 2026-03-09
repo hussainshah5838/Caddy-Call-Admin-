@@ -1,7 +1,37 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { MdEdit, MdDelete, MdContentCopy, MdVisibility } from "react-icons/md";
-import { seed } from "../Data/MenuList";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
+function toAvatar(name = "Admin") {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    name
+  )}&background=E5E7EB&color=111827&size=64`;
+}
+
+function mapCourseRow(course, index) {
+  const open = course?.hours?.open || "";
+  const close = course?.hours?.close || "";
+  const assignedAdmins = Array.isArray(course?.assignedAdmins)
+    ? course.assignedAdmins
+    : [];
+
+  return {
+    id: String(course?._id || ""),
+    name: course?.courseName || "",
+    photo: course?.photo || "",
+    location: course?.location?.address || "",
+    status:
+      String(course?.status || "").toLowerCase() === "maintenance"
+        ? "maintenance"
+        : "active",
+    hours: open && close ? `${open} - ${close}` : open || close || "-",
+    admins: assignedAdmins.map((a) => toAvatar(a?.name || "Admin")),
+    mapUrl: "#",
+    order: index + 1,
+  };
+}
 
 // pill helper for status color
 const pill = (status) =>
@@ -40,21 +70,57 @@ const Pagination = ({ page, pageSize, total, onPageChange }) => {
 export default function MenuListPage() {
   const navigate = useNavigate();
 
-  // state you likely already have
-  const [data, setData] = React.useState(seed);
+  const [data, setData] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState("");
   const [page, setPage] = React.useState(1);
   const [pageSize] = React.useState(10);
   const total = data.length;
 
-  const onToggle = (id) => {
-    setData((rows) =>
-      rows.map((r) =>
-        r.id === id
-          ? { ...r, status: r.status === "active" ? "maintenance" : "active" }
-          : r
-      )
-    );
-  };
+  React.useEffect(() => {
+    let mounted = true;
+
+    const fetchCourses = async () => {
+      const token = localStorage.getItem("auth:token");
+      if (!token) {
+        if (!mounted) return;
+        setData([]);
+        setLoading(false);
+        setError("Authentication token not found.");
+        return;
+      }
+
+      setLoading(true);
+      setError("");
+      try {
+        const response = await fetch(`${API_BASE_URL}/courses`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const resData = await response.json().catch(() => ({}));
+        if (!response.ok || !resData?.success || !Array.isArray(resData?.courses)) {
+          throw new Error(resData?.message || "Failed to fetch courses.");
+        }
+
+        if (!mounted) return;
+        setData(resData.courses.map((course, index) => mapCourseRow(course, index)));
+      } catch (err) {
+        if (!mounted) return;
+        setData([]);
+        setError(err?.message || "Failed to fetch courses.");
+      } finally {
+        if (!mounted) return;
+        setLoading(false);
+      }
+    };
+
+    fetchCourses();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const onEdit = (row) => {
     // your existing edit flow / drawer
@@ -67,13 +133,19 @@ export default function MenuListPage() {
   };
 
   const onView = (row) => {
-    navigate(`/menu/${row.id}`); // <-- open protected management page
+    navigate(`/menu/${row.id}`);
   };
 
   const onPageChange = (p) => setPage(p);
 
   return (
     <div className="w-full rounded-xl border border-gray-200 bg-white">
+      {error && (
+        <div className="m-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          {error}
+        </div>
+      )}
+
       {/* TABLE (md and up) */}
       <div className="hidden md:block overflow-x-auto">
         <table className="min-w-full text-sm">
@@ -88,34 +160,37 @@ export default function MenuListPage() {
             </tr>
           </thead>
           <tbody>
-            {data.map((c) => (
+            {loading && (
+              <tr>
+                <td colSpan={8} className="px-4 py-10 text-center text-gray-500">
+                  <div className="inline-flex items-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                    Loading courses...
+                  </div>
+                </td>
+              </tr>
+            )}
+
+            {(loading ? [] : data).map((c) => (
               <tr key={c.id} className="border-t border-gray-100">
                 <td className="px-4 py-3">{c.order}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 rounded-full bg-gray-100" />
+                    {c.photo ? (
+                      <img
+                        src={c.photo}
+                        alt={c.name}
+                        className="h-6 w-6 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-6 w-6 rounded-full bg-gray-100" />
+                    )}
                     <div className="text-gray-900">{c.name}</div>
                   </div>
                 </td>
                 <td className="px-4 py-3 text-gray-500">{c.location}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    {/* toggle */}
-                    <button
-                      onClick={() => onToggle(c.id)}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${
-                        c.status === "active" ? "bg-emerald-600" : "bg-gray-300"
-                      }`}
-                      title="Toggle status"
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                          c.status === "active"
-                            ? "translate-x-4"
-                            : "translate-x-1"
-                        }`}
-                      />
-                    </button>
                     <span className={`font-medium ${pill(c.status)}`}>
                       {c.status === "active" ? "Active" : "Maintenance"}
                     </span>
@@ -136,7 +211,7 @@ export default function MenuListPage() {
               </tr>
             ))}
 
-            {data.length === 0 && (
+            {!loading && data.length === 0 && (
               <tr>
                 <td
                   colSpan={8}
@@ -152,17 +227,34 @@ export default function MenuListPage() {
 
       {/* MOBILE LIST (smaller than md) */}
       <div className="md:hidden divide-y divide-gray-100">
-        {data.length === 0 && (
+        {loading && (
+          <div className="p-6 text-center text-gray-500 text-sm">
+            <div className="inline-flex items-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+              Loading courses...
+            </div>
+          </div>
+        )}
+
+        {!loading && data.length === 0 && (
           <div className="p-6 text-center text-gray-400 text-sm">
             No courses found.
           </div>
         )}
 
-        {data.map((c) => (
+        {(loading ? [] : data).map((c) => (
           <div key={c.id} className="p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-gray-100" />
+                {c.photo ? (
+                  <img
+                    src={c.photo}
+                    alt={c.name}
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-gray-100" />
+                )}
                 <div>
                   <div className="text-gray-900 font-medium">{c.name}</div>
                   <div className="text-xs text-gray-500">{c.location}</div>
@@ -202,19 +294,6 @@ export default function MenuListPage() {
             </div>
 
             <div className="mt-3 flex items-center gap-3">
-              <button
-                onClick={() => onToggle(c.id)}
-                className={`relative inline-flex h-5 w-10 items-center rounded-full transition ${
-                  c.status === "active" ? "bg-emerald-600" : "bg-gray-300"
-                }`}
-                title="Toggle status"
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                    c.status === "active" ? "translate-x-5" : "translate-x-1"
-                  }`}
-                />
-              </button>
               <button
                 onClick={() => onView(c)}
                 className="px-3 py-1.5 rounded-md border border-gray-200 text-sm"

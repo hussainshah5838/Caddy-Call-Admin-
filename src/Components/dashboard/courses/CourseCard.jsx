@@ -41,7 +41,10 @@ const CourseCard = React.memo(function CourseCard({ course, onView }) {
             {money(course.revenue)}
           </p>
           <p className="text-sm text-gray-600">
-            <span className="text-gray-500">Bookings:</span> {course.bookings}
+            <span className="text-gray-500">
+              {course.staff !== undefined ? "Staff:" : "Bookings:"}
+            </span>{" "}
+            {course.staff !== undefined ? course.staff : course.bookings}
           </p>
         </div>
 

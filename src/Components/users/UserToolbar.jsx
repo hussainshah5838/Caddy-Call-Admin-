@@ -18,31 +18,33 @@ export default function UserToolbar({
   counts,
   tab,
   setTab,
+  tabs,
   query,
   setQuery,
   course,
   setCourse,
   courseOptions = [],
+  showCourseFilter = true,
   status,
   setStatus,
   onAdd,
 }) {
+  const resolvedTabs = tabs || [
+    { id: "all", label: "All Users", count: counts?.all || 0 },
+    { id: "golfer", label: "Golfers", count: counts?.golfer || 0 },
+    { id: "staff", label: "Staff", count: counts?.staff || 0 },
+    { id: "admin", label: "Admins", count: counts?.admin || 0 },
+  ];
+
   return (
     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       {/* Tabs */}
       <div className="flex flex-wrap items-center gap-2">
-        <Tab active={tab === "all"} onClick={() => setTab("all")}>
-          All Users ({counts.all})
-        </Tab>
-        <Tab active={tab === "golfer"} onClick={() => setTab("golfer")}>
-          Golfers ({counts.golfer})
-        </Tab>
-        <Tab active={tab === "staff"} onClick={() => setTab("staff")}>
-          Staff ({counts.staff})
-        </Tab>
-        <Tab active={tab === "admin"} onClick={() => setTab("admin")}>
-          Admins ({counts.admin})
-        </Tab>
+        {resolvedTabs.map((t) => (
+          <Tab key={t.id} active={tab === t.id} onClick={() => setTab(t.id)}>
+            {t.label} ({t.count})
+          </Tab>
+        ))}
       </div>
 
       {/* Search + Filters + Add */}
@@ -57,20 +59,22 @@ export default function UserToolbar({
           />
         </div>
 
-        <div className="relative">
-          <select
-            value={course}
-            onChange={(e) => setCourse(e.target.value)}
-            className="appearance-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm pr-8"
-          >
-            {courseOptions.map((c) => (
-              <option key={c} value={c}>
-                {c === "all" ? "All Courses" : c}
-              </option>
-            ))}
-          </select>
-          <MdKeyboardArrowDown className="pointer-events-none absolute right-2.5 top-2.5 h-5 w-5 text-gray-400" />
-        </div>
+        {showCourseFilter && (
+          <div className="relative">
+            <select
+              value={course}
+              onChange={(e) => setCourse(e.target.value)}
+              className="appearance-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm pr-8"
+            >
+              {courseOptions.map((c) => (
+                <option key={c} value={c}>
+                  {c === "all" ? "All Courses" : c}
+                </option>
+              ))}
+            </select>
+            <MdKeyboardArrowDown className="pointer-events-none absolute right-2.5 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+        )}
 
         <div className="relative">
           <select

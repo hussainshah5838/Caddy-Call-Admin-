@@ -25,10 +25,14 @@ export default function LoginPage() {
 
     try {
       setLoading(true);
-      await login({ email: form.email, password: form.password });
-      navigate('/');
+      const u = await login({ email: form.email, password: form.password });
+      if (u?.backendRole === "course admin") {
+        navigate("/course-admin", { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
     } catch (e) {
-      setErr("Invalid credentials. Please try again.");
+      setErr(e?.message || "Invalid credentials. Please try again.");
     } finally {
       setLoading(false);
     }

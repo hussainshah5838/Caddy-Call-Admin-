@@ -8,7 +8,7 @@ import { useNavigate, useParams } from "react-router-dom";
 export default function MenuManagement() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const M = useMenu();
+  const M = useMenu({ courseId: id });
 
   return (
     <div className="space-y-5">
@@ -46,6 +46,7 @@ export default function MenuManagement() {
           >
             <MenuList
               items={M.filtered}
+              loading={M.loading}
               query={M.query}
               setQuery={M.setQuery}
               selectedId={M.selectedId}
@@ -59,7 +60,13 @@ export default function MenuManagement() {
         <div className="md:col-span-8 lg:col-span-8 space-y-4 sm:space-y-5">
           {/* Ensure panels line up + stretch nicely */}
           <div className="min-h-[340px]">
-            <MenuEditor item={M.selected} onSave={M.save} onDelete={M.remove} />
+            <MenuEditor
+              item={M.selected}
+              onSave={M.save}
+              onDelete={M.remove}
+              isSaving={M.saving}
+              isDeleting={M.deleting}
+            />
           </div>
 
           <AssetsPanel assets={M.assets} onUpload={M.upsertAsset} />

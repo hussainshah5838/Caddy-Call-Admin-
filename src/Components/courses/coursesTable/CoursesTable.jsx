@@ -14,6 +14,7 @@ const pill = (status) => (status === "active" ? "text-emerald-600" : "text-amber
  */
 export default function CoursesTable({
   rows,
+  loading = false,
   total = 0,
   page = 1,
   pageSize = 10,
@@ -42,12 +43,31 @@ export default function CoursesTable({
             </tr>
           </thead>
           <tbody>
+            {loading && (
+              <tr>
+                <td colSpan={8} className="px-4 py-10 text-center text-gray-500">
+                  <div className="inline-flex items-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                    Loading courses...
+                  </div>
+                </td>
+              </tr>
+            )}
+
             {data.map((c) => (
               <tr key={c.id} className="border-t border-gray-100">
                 <td className="px-4 py-3">{c.order}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 rounded-full bg-gray-100" />
+                    {c.photo ? (
+                      <img
+                        src={c.photo}
+                        alt=""
+                        className="h-6 w-6 rounded-full bg-gray-100 object-cover"
+                      />
+                    ) : (
+                      <div className="h-6 w-6 rounded-full bg-gray-100" />
+                    )}
                     <div className="text-gray-900">{c.name}</div>
                   </div>
                 </td>
@@ -57,7 +77,7 @@ export default function CoursesTable({
                     {/* toggle */}
                     <button
                       onClick={() => onToggle?.(c.id)}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition
+                      className={`relative inline-flex h-5 w-9 cursor-pointer items-center rounded-full transition
                         ${c.status === "active" ? "bg-emerald-600" : "bg-gray-300"}`}
                       title="Toggle status"
                     >
@@ -97,7 +117,7 @@ export default function CoursesTable({
               </tr>
             ))}
 
-            {data.length === 0 && (
+            {!loading && data.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-4 py-10 text-center text-gray-400">
                   No courses found.
@@ -110,7 +130,15 @@ export default function CoursesTable({
 
       {/* MOBILE LIST (smaller than md) */}
       <div className="md:hidden divide-y divide-gray-100">
-        {data.length === 0 && (
+        {loading && (
+          <div className="p-6 text-center text-gray-500 text-sm">
+            <div className="inline-flex items-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+              Loading courses...
+            </div>
+          </div>
+        )}
+        {!loading && data.length === 0 && (
           <div className="p-6 text-center text-gray-400 text-sm">No courses found.</div>
         )}
 
@@ -118,7 +146,15 @@ export default function CoursesTable({
           <div key={c.id} className="p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-gray-100" />
+                {c.photo ? (
+                  <img
+                    src={c.photo}
+                    alt=""
+                    className="h-8 w-8 rounded-full bg-gray-100 object-cover"
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-gray-100" />
+                )}
                 <div>
                   <div className="text-gray-900 font-medium">{c.name}</div>
                   <div className="text-xs text-gray-500">{c.location}</div>
@@ -152,7 +188,7 @@ export default function CoursesTable({
             <div className="mt-3 flex items-center gap-3">
               <button
                 onClick={() => onToggle?.(c.id)}
-                className={`relative inline-flex h-5 w-10 items-center rounded-full transition
+                className={`relative inline-flex h-5 w-10 cursor-pointer items-center rounded-full transition
                   ${c.status === "active" ? "bg-emerald-600" : "bg-gray-300"}`}
                 title="Toggle status"
               >

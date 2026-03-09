@@ -33,6 +33,7 @@ const StatCard = React.memo(function StatCard({
   sub,
   icon = "cart",
   currency,
+  loading = false,
 }) {
   const Icon = ICONS[icon] || MdShoppingCart;
   const accent = Accent[icon] || Accent.cart;
@@ -53,19 +54,27 @@ const StatCard = React.memo(function StatCard({
       </div>
 
       <div className="mt-2 text-2xl font-semibold text-gray-900 tracking-tight">
-        <Value value={value} currency={currency} />
+        {loading ? (
+          <div className="h-7 w-24 rounded bg-gray-200 animate-pulse" />
+        ) : (
+          <Value value={value} currency={currency} />
+        )}
       </div>
 
       <div className="mt-2 flex items-center gap-2">
-        <span
-          className={[
-            "text-sm font-medium",
-            up ? "text-emerald-600" : "text-rose-600",
-          ].join(" ")}
-        >
-          {up ? "+" : ""}
-          {delta}%
-        </span>
+        {loading ? (
+          <span className="h-5 w-14 rounded bg-gray-200 animate-pulse" />
+        ) : (
+          <span
+            className={[
+              "text-sm font-medium",
+              up ? "text-emerald-600" : "text-rose-600",
+            ].join(" ")}
+          >
+            {up ? "+" : ""}
+            {delta}%
+          </span>
+        )}
         <span className="text-sm text-gray-500">{sub}</span>
       </div>
     </div>

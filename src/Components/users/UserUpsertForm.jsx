@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import {
   MdKeyboardArrowDown,
-  MdCalendarToday,
   MdClose,
   MdAddAPhoto,
 } from "react-icons/md";
@@ -15,18 +14,20 @@ export default function UserUpsertForm({
   mode = "create",
   value,
   courseOptions = [],
+  submitting = false,
   onSubmit,
   onCancel,
 }) {
   const [form, setForm] = useState({
     photo: null,
     email: "",
+    phoneNo: "",
     course: "",
-    role: "Admin",
+    role: "Course Admin",
     status: "active",
-    lastActivity: "",
   });
   const [photoUrl, setPhotoUrl] = useState("");
+  const photoInputRef = React.useRef(null);
 
   useEffect(() => {
     if (value) {
@@ -35,7 +36,11 @@ export default function UserUpsertForm({
     }
   }, [value]);
 
-  const canSubmit = useMemo(() => form.email && form.course, [form]);
+  const isGolfer = String(form.role).toLowerCase() === "golfer";
+  const canSubmit = useMemo(
+    () => !!form.email && (isGolfer || !!form.course),
+    [form.email, form.course, isGolfer]
+  );
 
   return (
     <div className="mx-auto w-full max-w-5xl">
@@ -45,7 +50,12 @@ export default function UserUpsertForm({
 
       {/* Photo */}
       <div className="md:col-span-3">
-        <div className="relative w-28 h-28 rounded-full border-2 border-[#0d3b2e] grid place-items-center overflow-hidden">
+        <button
+          type="button"
+          onClick={() => photoInputRef.current?.click()}
+          className="relative w-28 h-28 cursor-pointer rounded-full border-2 border-[#0d3b2e] grid place-items-center overflow-hidden"
+          title="Upload photo"
+        >
           {photoUrl ? (
             <>
               <img
@@ -71,9 +81,10 @@ export default function UserUpsertForm({
               </div>
             </div>
           )}
-        </div>
+        </button>
         <label className="inline-flex mt-3 text-sm font-medium text-[#0d3b2e] cursor-pointer">
           <input
+            ref={photoInputRef}
             type="file"
             accept="image/*"
             className="hidden"
@@ -109,6 +120,20 @@ export default function UserUpsertForm({
 
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1.5">
+              Phone No
+            </label>
+            <input
+              className={input}
+              placeholder="e.g. +92 300 1234567"
+              value={form.phoneNo}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, phoneNo: e.target.value }))
+              }
+            />
+          </div>
+
+          <div>
+            <label className="block text-[13px] font-medium text-gray-700 mb-1.5">
               Role
             </label>
             <div className="relative">
@@ -119,37 +144,41 @@ export default function UserUpsertForm({
                   setForm((f) => ({ ...f, role: e.target.value }))
                 }
               >
-                <option>Admin</option>
+                <option>Course Admin</option>
                 <option>Golfer</option>
-                <option>Kitchen Staff</option>
-                <option>Beverage Cart Staff</option>
-                <option>Marshal</option>
+                <option>Kitchen</option>
+                <option>Beverage Cart</option>
+                <option>Bar</option>
+                <option>Pro Shop</option>
+                <option>Runner</option>
               </select>
               <MdKeyboardArrowDown className="absolute right-2.5 top-2.5 h-5 w-5 text-gray-400" />
             </div>
           </div>
 
-          <div>
-            <label className="block text-[13px] font-medium text-gray-700 mb-1.5">
-              Course
-            </label>
-            <div className="relative">
-              <select
-                className={select}
-                value={form.course}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, course: e.target.value }))
-                }
-              >
-                {courseOptions.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-              <MdKeyboardArrowDown className="absolute right-2.5 top-2.5 h-5 w-5 text-gray-400" />
+          {!isGolfer && (
+            <div>
+              <label className="block text-[13px] font-medium text-gray-700 mb-1.5">
+                Course
+              </label>
+              <div className="relative">
+                <select
+                  className={select}
+                  value={form.course}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, course: e.target.value }))
+                  }
+                >
+                  {courseOptions.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+                <MdKeyboardArrowDown className="absolute right-2.5 top-2.5 h-5 w-5 text-gray-400" />
+              </div>
             </div>
-          </div>
+          )}
 
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1.5">
@@ -171,23 +200,6 @@ export default function UserUpsertForm({
             </div>
           </div>
 
-          <div className="md:col-span-2">
-            <label className="block text-[13px] font-medium text-gray-700 mb-1.5">
-              Last Activity
-            </label>
-            <div className="relative">
-              <input
-                type="date"
-                className={input}
-                value={form.lastActivity}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, lastActivity: e.target.value }))
-                }
-              />
-              <MdCalendarToday className="absolute right-3 top-3.5 h-4 w-4 text-gray-400" />
-            </div>
-          </div>
-
           <div className="md:col-span-2 mt-2 flex items-center gap-4">
             <button
               onClick={onCancel}
@@ -196,15 +208,21 @@ export default function UserUpsertForm({
               Cancel
             </button>
             <button
-              disabled={!canSubmit}
-              onClick={() => canSubmit && onSubmit?.(form)}
+              disabled={!canSubmit || submitting}
+              onClick={() => !submitting && canSubmit && onSubmit?.(form)}
               className={`rounded-md px-6 py-2.5 text-sm text-white ${
-                canSubmit
+                canSubmit && !submitting
                   ? "bg-[#0d3b2e] hover:opacity-95"
                   : "bg-gray-300 cursor-not-allowed"
               }`}
             >
-              {mode === "edit" ? "Save changes" : "Add course"}
+              {mode === "edit"
+                ? submitting
+                  ? "Saving..."
+                  : "Save changes"
+                : submitting
+                ? "Adding..."
+                : "Add User"}
             </button>
           </div>
         </div>

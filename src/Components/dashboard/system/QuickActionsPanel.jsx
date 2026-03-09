@@ -25,10 +25,11 @@ const QuickActionsPanel = React.memo(function QuickActionsPanel({
       <div className="space-y-3">
         {rows.map((a) => {
           const Icon = ICONS[a.icon] || MdAddCircleOutline;
+          const destination = a.id === "add-course" ? "/courses/new" : a.to;
           return (
             <Link
               key={a.id}
-              to={a.to}
+              to={destination}
               className="flex items-center gap-3 rounded-md border border-rose-100 px-3 py-2 text-sm text-rose-500 hover:bg-rose-50/50"
             >
               <Icon className="h-4 w-4" />
