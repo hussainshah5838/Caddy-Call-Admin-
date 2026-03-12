@@ -24,6 +24,7 @@ export default function CoursesTable({
   onDelete,
 }) {
   const data = useMemo(() => rows || [], [rows]);
+  const [holesModalCourse, setHolesModalCourse] = React.useState(null);
 
   return (
     <div className="w-full rounded-xl border border-gray-200 bg-white">
@@ -38,6 +39,7 @@ export default function CoursesTable({
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Hours</th>
               <th className="px-4 py-3 font-medium">Map</th>
+              <th className="px-4 py-3 font-medium">Holes</th>
               <th className="px-4 py-3 font-medium">Assigned Admins</th>
               <th className="px-4 py-3 font-medium">Actions</th>
             </tr>
@@ -45,7 +47,7 @@ export default function CoursesTable({
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-gray-500">
+                <td colSpan={9} className="px-4 py-10 text-center text-gray-500">
                   <div className="inline-flex items-center gap-2">
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
                     Loading courses...
@@ -98,6 +100,15 @@ export default function CoursesTable({
                   </a>
                 </td>
                 <td className="px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => setHolesModalCourse(c)}
+                    className="rounded-md border border-gray-200 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    View
+                  </button>
+                </td>
+                <td className="px-4 py-3">
                   <div className="flex -space-x-2">
                     {(c.admins || []).map((src, i) => (
                       <img key={i} src={src} alt="" className="h-7 w-7 rounded-full border-2 border-white object-cover" />
@@ -119,7 +130,7 @@ export default function CoursesTable({
 
             {!loading && data.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-gray-400">
+                <td colSpan={9} className="px-4 py-10 text-center text-gray-400">
                   No courses found.
                 </td>
               </tr>
@@ -183,6 +194,15 @@ export default function CoursesTable({
                   <MdContentCopy className="h-4 w-4" /> Map
                 </a>
               </div>
+              <div className="col-span-2">
+                <button
+                  type="button"
+                  onClick={() => setHolesModalCourse(c)}
+                  className="rounded-md border border-gray-200 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  View Holes
+                </button>
+              </div>
             </div>
 
             <div className="mt-3 flex items-center gap-3">
@@ -217,6 +237,50 @@ export default function CoursesTable({
           onPageChange={onPageChange}
         />
       </div>
+
+      {holesModalCourse && (
+        <div className="fixed inset-0 z-50 bg-black/35 p-4 sm:p-6">
+          <div className="mx-auto mt-6 w-full max-w-2xl rounded-xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+              <h3 className="text-base font-semibold text-gray-900">
+                Holes - {holesModalCourse.name}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setHolesModalCourse(null)}
+                className="rounded-md px-2 py-1 text-sm text-gray-500 hover:bg-gray-100"
+              >
+                Close
+              </button>
+            </div>
+            <div className="max-h-[65vh] overflow-auto p-4">
+              {!Array.isArray(holesModalCourse.holes) ||
+              holesModalCourse.holes.length === 0 ? (
+                <p className="text-sm text-gray-500">No holes available for this course.</p>
+              ) : (
+                <div className="space-y-3">
+                  {holesModalCourse.holes.map((hole, index) => (
+                    <div
+                      key={`${hole?.hole || "hole"}-${index}`}
+                      className="rounded-lg border border-gray-200 bg-gray-50 p-3"
+                    >
+                      <p className="text-sm font-semibold text-gray-900">
+                        {hole?.hole || `Hole ${index + 1}`}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-600">
+                        Coordinates: {hole?.coordinates || "-"}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-600">
+                        Address: {hole?.address || "-"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

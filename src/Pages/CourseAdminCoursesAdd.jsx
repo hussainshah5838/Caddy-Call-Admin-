@@ -46,6 +46,7 @@ export default function CourseAdminCoursesAdd() {
             dueDate: payload?.dueDate || "",
             taxRate: payload?.taxRate ?? "",
             deliveryFee: payload?.deliveryFee ?? "",
+            holes: payload?.holes || [],
             order: C.rows.length + 1,
           });
           nav("/course-admin/courses");

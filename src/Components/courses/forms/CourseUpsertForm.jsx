@@ -25,6 +25,63 @@ const mapBtnCls =
 
 const DEFAULT_CENTER = [33.6844, 73.0479]; // Islamabad default
 
+function parseLatLng(value = "") {
+  if (!value) return null;
+
+  const source = String(value).trim();
+  const coordsMatch = source.match(
+    /(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/i
+  );
+  if (coordsMatch) {
+    const lat = Number(coordsMatch[1]);
+    const lng = Number(coordsMatch[2]);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return { lat, lng };
+    }
+  }
+
+  const mapsMatch = source.match(/maps\?q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i);
+  if (mapsMatch) {
+    const lat = Number(mapsMatch[1]);
+    const lng = Number(mapsMatch[2]);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return { lat, lng };
+    }
+  }
+
+  return null;
+}
+
+function normalizeHoles(holes) {
+  if (!Array.isArray(holes)) return [];
+
+  return holes
+    .map((item, index) => {
+      if (typeof item === "string") {
+        return { hole: `Hole ${index + 1}`, coordinates: item, address: "" };
+      }
+
+      if (item && typeof item === "object") {
+        return {
+          hole:
+            item.hole ||
+            item.name ||
+            item.title ||
+            `Hole ${index + 1}`,
+          coordinates:
+            item.coordinates ||
+            item.coordinate ||
+            item.coords ||
+            "",
+          address: item.address || "",
+        };
+      }
+
+      return { hole: `Hole ${index + 1}`, coordinates: "", address: "" };
+    })
+    .filter((item) => item.hole || item.coordinates);
+}
+
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const totalMinutes = i * 30;
   const hours24 = Math.floor(totalMinutes / 60);
@@ -94,11 +151,15 @@ export default function CourseUpsertForm({
     dueDate: "",
     taxRate: "",
     deliveryFee: "",
+    holes: [],
     admins: [], // array of avatar urls (or ids; up to you)
     photo: null, // File or URL
   });
   const [mapOpen, setMapOpen] = useState(false);
-  const [mapTargetField, setMapTargetField] = useState("location"); // "location" | "map"
+  const [mapTarget, setMapTarget] = useState({
+    field: "location", // "location" | "map" | "holeCoordinates"
+    holeIndex: null,
+  });
   const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
   const [pickedLocation, setPickedLocation] = useState(null); // {lat, lng, address}
   const [searchQuery, setSearchQuery] = useState("");
@@ -126,6 +187,7 @@ export default function CourseUpsertForm({
         ...value,
         hoursFrom: value?.hoursFrom || parts[0] || "",
         hoursTo: value?.hoursTo || parts[1] || "",
+        holes: normalizeHoles(value?.holes),
       }));
       setPhotoUrl(typeof value?.photo === "string" ? value.photo : "");
     }
@@ -189,20 +251,67 @@ export default function CourseUpsertForm({
     });
   }, []);
 
+  const addHole = useCallback(() => {
+    setForm((f) => {
+      const currentHoles = Array.isArray(f.holes) ? f.holes : [];
+      const nextIndex = currentHoles.length + 1;
+      return {
+        ...f,
+        holes: [
+          ...currentHoles,
+          { hole: `Hole ${nextIndex}`, coordinates: "", address: "" },
+        ],
+      };
+    });
+  }, []);
+
+  const updateHole = useCallback((index, field, fieldValue) => {
+    setForm((f) => {
+      const currentHoles = Array.isArray(f.holes) ? f.holes : [];
+      const nextHoles = currentHoles.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [field]: fieldValue } : item
+      );
+      return { ...f, holes: nextHoles };
+    });
+  }, []);
+
+  const removeHole = useCallback((index) => {
+    setForm((f) => {
+      const currentHoles = Array.isArray(f.holes) ? f.holes : [];
+      const nextHoles = currentHoles.filter((_, itemIndex) => itemIndex !== index);
+      return { ...f, holes: nextHoles };
+    });
+  }, []);
+
   const canSubmit = useMemo(
     () => form.name.trim() && form.location.trim(),
     [form.name, form.location]
   );
 
-  const syncFormWithPickedLocation = useCallback((location, targetField) => {
-    if (!location) return;
+  const syncFormWithPickedLocation = useCallback((location, target) => {
+    if (!location || !target?.field) return;
+
     const mapUrl = `https://www.google.com/maps?q=${location.lat},${location.lng}`;
-    setForm((f) => ({
-      ...f,
-      location: targetField === "location" ? location.address : f.location,
-      map: targetField === "map" ? mapUrl : f.map,
-      mapCoordinates: { lat: location.lat, lng: location.lng },
-    }));
+    const holeCoordinates = `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`;
+
+    setForm((f) => {
+      if (target.field === "holeCoordinates") {
+        const currentHoles = Array.isArray(f.holes) ? f.holes : [];
+        const nextHoles = currentHoles.map((item, itemIndex) =>
+          itemIndex === target.holeIndex
+            ? { ...item, coordinates: holeCoordinates, address: location.address || "" }
+            : item
+        );
+        return { ...f, holes: nextHoles };
+      }
+
+      return {
+        ...f,
+        location: target.field === "location" ? location.address : f.location,
+        map: target.field === "map" ? mapUrl : f.map,
+        mapCoordinates: { lat: location.lat, lng: location.lng },
+      };
+    });
   }, []);
 
   const reverseGeocode = useCallback(async ({ lat, lng }) => {
@@ -231,10 +340,10 @@ export default function CourseUpsertForm({
       const address = await reverseGeocode({ lat, lng });
       const selected = { lat, lng, address };
       setPickedLocation(selected);
-      syncFormWithPickedLocation(selected, mapTargetField); // reflect only target field
+      syncFormWithPickedLocation(selected, mapTarget); // reflect only target field
       setMapCenter([lat, lng]);
     },
-    [reverseGeocode, syncFormWithPickedLocation, mapTargetField]
+    [reverseGeocode, syncFormWithPickedLocation, mapTarget]
   );
 
   const runSearch = useCallback(async () => {
@@ -256,9 +365,29 @@ export default function CourseUpsertForm({
     }
   }, [searchQuery]);
 
-  const openMapPicker = useCallback((targetField = "location") => {
-    setMapTargetField(targetField);
+  const openMapPicker = useCallback((targetField = "location", holeIndex = null) => {
+    const nextTarget = { field: targetField, holeIndex };
+    setMapTarget(nextTarget);
     setMapOpen(true);
+
+    if (targetField === "holeCoordinates" && Number.isInteger(holeIndex)) {
+      const holeValue = form.holes?.[holeIndex]?.coordinates || "";
+      setSearchQuery(holeValue);
+      const parsed = parseLatLng(holeValue);
+      if (parsed) {
+        setMapCenter([parsed.lat, parsed.lng]);
+        setPickedLocation({
+          lat: parsed.lat,
+          lng: parsed.lng,
+          address: `${parsed.lat.toFixed(6)}, ${parsed.lng.toFixed(6)}`,
+        });
+      } else {
+        setMapCenter(DEFAULT_CENTER);
+        setPickedLocation(null);
+      }
+      return;
+    }
+
     if (targetField === "location" && form.location) {
       setSearchQuery(form.location);
     } else if (targetField === "map" && form.map) {
@@ -277,15 +406,15 @@ export default function CourseUpsertForm({
       setMapCenter(DEFAULT_CENTER);
       setPickedLocation(null);
     }
-  }, [form.location, form.map, form.mapCoordinates]);
+  }, [form.location, form.map, form.mapCoordinates, form.holes]);
 
   const applyPickedLocation = useCallback(() => {
     if (pickedLocation) {
-      syncFormWithPickedLocation(pickedLocation, mapTargetField);
+      syncFormWithPickedLocation(pickedLocation, mapTarget);
     }
     setMapOpen(false);
     setSearchResults([]);
-  }, [pickedLocation, syncFormWithPickedLocation, mapTargetField]);
+  }, [pickedLocation, syncFormWithPickedLocation, mapTarget]);
 
   return (
     <div className="mx-auto w-full max-w-5xl">
@@ -503,6 +632,60 @@ export default function CourseUpsertForm({
               </button>
             </Field>
 
+            <Field label="Hole" className="md:col-span-2">
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={addHole}
+                  className={mapBtnCls}
+                >
+                  Add Hole
+                </button>
+
+                {(form.holes || []).map((holeItem, index) => (
+                  <div
+                    key={`hole-${index}`}
+                    className="grid grid-cols-1 gap-3 rounded-md border border-gray-100 p-3 md:grid-cols-2"
+                  >
+                    <input
+                      className={inputCls}
+                      value={holeItem.hole}
+                      onChange={(e) =>
+                        updateHole(index, "hole", e.target.value)
+                      }
+                      placeholder={`Hole ${index + 1}`}
+                    />
+                    <div className="relative">
+                      <input
+                        className={inputCls}
+                        value={holeItem.coordinates}
+                        readOnly
+                        onClick={() => openMapPicker("holeCoordinates", index)}
+                        placeholder="Select coordinates from map"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => openMapPicker("holeCoordinates", index)}
+                        className={iconRightCls}
+                        title="Pick coordinates on map"
+                      >
+                        <MdMap />
+                      </button>
+                    </div>
+                    <div className="md:col-span-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => removeHole(index)}
+                        className="px-1.5 py-0.5 text-xs font-medium text-rose-600 hover:text-rose-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Field>
+
             {showAssignedAdmins && (
               <Field label="Assigned Admins">
                 {/* simple select dropdown with avatar preview */}
@@ -686,7 +869,7 @@ export default function CourseUpsertForm({
                           address: r.display_name || `${lat}, ${lng}`,
                         };
                         setPickedLocation(selected);
-                        syncFormWithPickedLocation(selected, mapTargetField); // reflect only target field
+                        syncFormWithPickedLocation(selected, mapTarget); // reflect only target field
                         setMapCenter([lat, lng]);
                       }}
                     >

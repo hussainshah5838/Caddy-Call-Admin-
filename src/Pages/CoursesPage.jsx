@@ -34,6 +34,7 @@ function mapCourseAdminCourse(course) {
     dueDate: course?.dueDate ? new Date(course.dueDate).toISOString().slice(0, 10) : "",
     taxRate: course?.taxRate ?? "",
     deliveryFee: course?.deliveryFee ?? "",
+    holes: Array.isArray(course?.holes) ? course.holes : [],
   };
 }
 
@@ -47,6 +48,7 @@ const CoursesPage = () => {
   const [courseAdminCourse, setCourseAdminCourse] = React.useState(null);
   const [courseAdminLoading, setCourseAdminLoading] = React.useState(isCourseAdmin);
   const [courseAdminError, setCourseAdminError] = React.useState("");
+  const [holesModalOpen, setHolesModalOpen] = React.useState(false);
   const pageSize = 8;
 
   React.useEffect(() => {
@@ -240,6 +242,16 @@ const CoursesPage = () => {
                   {row.deliveryFee === "" ? "-" : `$${row.deliveryFee}`}
                 </p>
               </div>
+              <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                <p className="text-xs text-gray-500">Holes</p>
+                <button
+                  type="button"
+                  onClick={() => setHolesModalOpen(true)}
+                  className="mt-1 rounded-md border border-gray-200 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  View
+                </button>
+              </div>
             </div>
             <div className="mt-5">
               <button
@@ -249,6 +261,49 @@ const CoursesPage = () => {
               >
                 Edit Course
               </button>
+            </div>
+          </div>
+        )}
+
+        {holesModalOpen && row && (
+          <div className="fixed inset-0 z-50 bg-black/35 p-4 sm:p-6">
+            <div className="mx-auto mt-6 w-full max-w-2xl rounded-xl bg-white shadow-xl">
+              <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                <h3 className="text-base font-semibold text-gray-900">
+                  Holes - {row.name}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setHolesModalOpen(false)}
+                  className="rounded-md px-2 py-1 text-sm text-gray-500 hover:bg-gray-100"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="max-h-[65vh] overflow-auto p-4">
+                {!Array.isArray(row.holes) || row.holes.length === 0 ? (
+                  <p className="text-sm text-gray-500">No holes available for this course.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {row.holes.map((hole, index) => (
+                      <div
+                        key={`${hole?.hole || "hole"}-${index}`}
+                        className="rounded-lg border border-gray-200 bg-gray-50 p-3"
+                      >
+                        <p className="text-sm font-semibold text-gray-900">
+                          {hole?.hole || `Hole ${index + 1}`}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-600">
+                          Coordinates: {hole?.coordinates || "-"}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-600">
+                          Address: {hole?.address || "-"}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

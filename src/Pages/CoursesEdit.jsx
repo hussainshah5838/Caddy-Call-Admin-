@@ -97,6 +97,7 @@ export default function CoursesEdit() {
                 : "",
               taxRate: course?.taxRate ?? "",
               deliveryFee: course?.deliveryFee ?? "",
+              holes: course?.holes || [],
               admins: [],
               photo: course?.photo || null,
             });
@@ -206,6 +207,7 @@ export default function CoursesEdit() {
             : "",
           taxRate: course?.taxRate ?? "",
           deliveryFee: course?.deliveryFee ?? "",
+          holes: course?.holes || [],
           admins: selectedAdminAvatars,
           photo: course?.photo || null,
         };
@@ -291,6 +293,7 @@ export default function CoursesEdit() {
             dueDate: payload?.dueDate || null,
             taxRate: payload?.taxRate === "" ? "" : payload?.taxRate,
             deliveryFee: payload?.deliveryFee === "" ? "" : payload?.deliveryFee,
+            holes: payload?.holes || [],
           };
 
           if (photoUrl) {
@@ -380,6 +383,7 @@ export default function CoursesEdit() {
           dueDate: payload?.dueDate || null,
           taxRate: payload?.taxRate === "" ? "" : payload?.taxRate,
           deliveryFee: payload?.deliveryFee === "" ? "" : payload?.deliveryFee,
+          holes: payload?.holes || [],
         };
 
         if (photoUrl) {

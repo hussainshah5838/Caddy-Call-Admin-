@@ -41,6 +41,7 @@ function mapCourseRow(course, index) {
     dueDate: course?.dueDate ? new Date(course.dueDate).toISOString().slice(0, 10) : "",
     taxRate: course?.taxRate ?? "",
     deliveryFee: course?.deliveryFee ?? "",
+    holes: Array.isArray(course?.holes) ? course.holes : [],
     order: index + 1,
   };
 }

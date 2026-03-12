@@ -123,6 +123,7 @@ export default function CoursesAdd() {
               dueDate: payload?.dueDate || "",
               taxRate: payload?.taxRate ?? "",
               deliveryFee: payload?.deliveryFee ?? "",
+              holes: payload?.holes || [],
               order: C.rows.length + 1,
             });
             nav("/courses");
@@ -193,6 +194,7 @@ export default function CoursesAdd() {
           dueDate: payload?.dueDate || null,
           taxRate: payload?.taxRate === "" ? "" : payload?.taxRate,
           deliveryFee: payload?.deliveryFee === "" ? "" : payload?.deliveryFee,
+          holes: payload?.holes || [],
         };
 
         const createRes = await fetch(`${API_BASE_URL}/courses`, {

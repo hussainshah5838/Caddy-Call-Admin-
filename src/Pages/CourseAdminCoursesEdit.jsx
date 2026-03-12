@@ -82,6 +82,7 @@ export default function CourseAdminCoursesEdit() {
               : "",
             taxRate: course?.taxRate ?? "",
             deliveryFee: course?.deliveryFee ?? "",
+            holes: course?.holes || [],
             admins: [],
             photo: course?.photo || null,
           });
@@ -158,6 +159,7 @@ export default function CourseAdminCoursesEdit() {
           dueDate: payload?.dueDate || null,
           taxRate: payload?.taxRate === "" ? "" : payload?.taxRate,
           deliveryFee: payload?.deliveryFee === "" ? "" : payload?.deliveryFee,
+          holes: payload?.holes || [],
         };
 
         if (photoUrl) {
