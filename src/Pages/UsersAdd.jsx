@@ -35,6 +35,12 @@ export default function UsersAdd() {
   const [courseOptions, setCourseOptions] = React.useState([]);
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState("");
+  const [credentialsModalOpen, setCredentialsModalOpen] = React.useState(false);
+  const [createdCredentials, setCreatedCredentials] = React.useState({
+    email: "",
+    password: "",
+  });
+  const [copied, setCopied] = React.useState(false);
 
   React.useEffect(() => {
     let mounted = true;
@@ -145,7 +151,11 @@ export default function UsersAdd() {
                 throw new Error(data?.message || "Failed to create user.");
               }
 
-              nav(listPath);
+              setCreatedCredentials({
+                email: data?.user?.email || payload?.email || "",
+                password: data?.password || "",
+              });
+              setCredentialsModalOpen(true);
             } catch (err) {
               setError(err?.message || "Failed to create user.");
             } finally {
@@ -224,7 +234,11 @@ export default function UsersAdd() {
               throw new Error(data?.message || "Failed to create user.");
             }
 
-            nav(listPath);
+            setCreatedCredentials({
+              email: data?.user?.email || payload?.email || "",
+              password: data?.password || "",
+            });
+            setCredentialsModalOpen(true);
           } catch (err) {
             setError(err?.message || "Failed to create user.");
           } finally {
@@ -232,6 +246,62 @@ export default function UsersAdd() {
           }
         }}
       />
+
+      {credentialsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
+            <h3 className="text-base font-semibold text-gray-900">Login Credentials</h3>
+            <p className="mt-1 text-sm text-gray-600">
+              Copy and share these credentials with the user.
+            </p>
+
+            <div className="mt-4 space-y-3">
+              <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
+                <p className="text-xs text-gray-500">Email</p>
+                <p className="mt-1 text-sm font-medium text-gray-900 break-all">
+                  {createdCredentials.email || "-"}
+                </p>
+              </div>
+              <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
+                <p className="text-xs text-gray-500">Password</p>
+                <p className="mt-1 text-sm font-medium text-gray-900 break-all">
+                  {createdCredentials.password || "-"}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(
+                    `Email: ${createdCredentials.email || ""}\nPassword: ${
+                      createdCredentials.password || ""
+                    }`
+                  );
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1500);
+                }}
+              >
+                {copied ? "Copied!" : "Copy"}
+              </button>
+              <button
+                type="button"
+                className="rounded-md bg-[#0d3b2e] px-3 py-1.5 text-sm text-white"
+                onClick={() => {
+                  setCredentialsModalOpen(false);
+                  setCreatedCredentials({ email: "", password: "" });
+                  setCopied(false);
+                  nav(listPath);
+                }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
