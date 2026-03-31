@@ -1,23 +1,61 @@
 import React from "react";
+import { MdOutlineUploadFile } from "react-icons/md";
 import useMenu from "../hooks/useMenu";
 import MenuList from "../Components/menu/MenuList";
 import MenuEditor from "../Components/menu/MenuEditor";
 import AssetsPanel from "../Components/menu/AssetsPanel";
+import UploadMenuCsvModal from "../Components/menu/UploadMenuCsvModal";
+import MenuCsvImportResultModal from "../Components/menu/MenuCsvImportResultModal";
 
 export default function CourseAdminMenuManagementPage() {
   const M = useMenu();
+  const [uploadCsvOpen, setUploadCsvOpen] = React.useState(false);
+  const [importResultOpen, setImportResultOpen] = React.useState(false);
+  const [importResult, setImportResult] = React.useState(null);
 
   return (
     <div className="space-y-5">
       {/* Header */}
       <div className="px-1">
-        <h1 className="text-xl font-semibold text-gray-900">
-          Menu Management
-        </h1>
-        <p className="text-sm text-gray-500">
-          Your's menu items, descriptions, pricing, and visual assets.
-        </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl font-semibold text-gray-900">
+              Menu Management
+            </h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Your's menu items, descriptions, pricing, and visual assets.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setUploadCsvOpen(true)}
+            className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 shadow-sm hover:bg-gray-50 sm:w-auto"
+          >
+            <MdOutlineUploadFile className="h-5 w-5 text-gray-600" />
+            Upload menu (CSV / Excel)
+          </button>
+        </div>
       </div>
+
+      <UploadMenuCsvModal
+        open={uploadCsvOpen}
+        onClose={() => setUploadCsvOpen(false)}
+        onImported={M.reload}
+        onImportFinished={(payload) => {
+          setImportResult(payload);
+          setImportResultOpen(true);
+        }}
+      />
+      <MenuCsvImportResultModal
+        open={importResultOpen}
+        onClose={() => {
+          setImportResultOpen(false);
+          setImportResult(null);
+        }}
+        created={importResult?.created ?? 0}
+        failed={importResult?.failed ?? 0}
+        errors={importResult?.errors ?? []}
+      />
 
       {M.error && (
         <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">

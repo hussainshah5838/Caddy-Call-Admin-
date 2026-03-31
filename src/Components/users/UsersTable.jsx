@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { MdMoreVert, MdEdit, MdDelete, MdToggleOn, MdToggleOff } from "react-icons/md";
+import { MdMoreVert, MdEdit, MdDelete, MdToggleOn, MdToggleOff, MdVisibility } from "react-icons/md";
 import Pagination from "../ui/shared/Pagination";
 import ConfirmModal from "../ui/shared/ConfirmModal";
 
@@ -64,7 +64,15 @@ function useClickOutside(onOutside) {
   return ref;
 }
 
-function RowMenu({ currentStatus, onEdit, onToggleStatus, onAskDelete, onClose }) {
+function RowMenu({
+  currentStatus,
+  showViewCredentials = false,
+  onViewCredentials,
+  onEdit,
+  onToggleStatus,
+  onAskDelete,
+  onClose,
+}) {
   const ref = useClickOutside(onClose);
   const isActive = String(currentStatus).toLowerCase() === "active";
   return (
@@ -81,6 +89,15 @@ function RowMenu({ currentStatus, onEdit, onToggleStatus, onAskDelete, onClose }
       >
         <MdEdit className="h-4 w-4 text-gray-500" /> Edit
       </button>
+      {showViewCredentials && (
+        <button
+          type="button"
+          onClick={() => { onViewCredentials?.(); onClose?.(); }}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 text-sky-700"
+        >
+          <MdVisibility className="h-4 w-4" /> View Credentials
+        </button>
+      )}
       <button
         type="button"
         onClick={() => { onToggleStatus?.(); onClose?.(); }}
@@ -113,6 +130,7 @@ export default function UsersTable({
   onPageChange,
   showCourseColumn = true,
   onEdit,   // (user) => void
+  onViewCredentials, // (user) => void
   onToggleStatus, // (id, currentStatus) => void
   onDelete, // (user) => void
 }) {
@@ -200,6 +218,8 @@ export default function UsersTable({
                     {openMenuId === u.id && (
                       <RowMenu
                         currentStatus={u.status}
+                        showViewCredentials={!!u.canViewCredentials}
+                        onViewCredentials={() => onViewCredentials?.(u)}
                         onEdit={() => onEdit?.(u)}
                         onToggleStatus={() => onToggleStatus?.(u.id, u.status)}
                         onAskDelete={() => setConfirmRow(u)}
@@ -256,6 +276,8 @@ export default function UsersTable({
                 {openMenuId === u.id && (
                   <RowMenu
                     currentStatus={u.status}
+                    showViewCredentials={!!u.canViewCredentials}
+                    onViewCredentials={() => onViewCredentials?.(u)}
                     onEdit={() => onEdit?.(u)}
                     onToggleStatus={() => onToggleStatus?.(u.id, u.status)}
                     onAskDelete={() => setConfirmRow(u)}

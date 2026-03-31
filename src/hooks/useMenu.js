@@ -366,6 +366,10 @@ export default function useMenu(options = {}) {
     setAssets((a) => [{ id, label: "New Asset", src }, ...a]);
   }, []);
 
+  const reload = useCallback(() => {
+    setRefreshToken((x) => x + 1);
+  }, []);
+
   return {
     items,
     filtered,
@@ -383,5 +387,7 @@ export default function useMenu(options = {}) {
     remove,
     assets,
     upsertAsset,
+    reload,
+    selectedCourseName,
   };
 }

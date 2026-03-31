@@ -16,6 +16,26 @@ function toFormRole(role = "") {
   return "Kitchen";
 }
 
+function toFormRoles(roles = [], fallbackRole = "") {
+  const source = Array.isArray(roles) && roles.length > 0 ? roles : [fallbackRole];
+  return source.map((role) => toFormRole(role)).filter(Boolean);
+}
+
+function toBackendRole(role = "") {
+  const normalized = String(role).trim().toLowerCase();
+  if (normalized === "kitchen staff" || normalized === "kitchen") return "kitchen";
+  if (normalized === "beverage cart staff" || normalized === "beverage cart") return "beverage cart";
+  if (normalized === "bar staff" || normalized === "bar") return "bar";
+  if (normalized === "pro shop staff" || normalized === "pro shop") return "pro shop";
+  if (normalized === "runner") return "runner";
+  return "kitchen";
+}
+
+function toBackendRoles(roles = [], fallbackRole = "") {
+  const source = Array.isArray(roles) && roles.length > 0 ? roles : [fallbackRole];
+  return source.map((r) => toBackendRole(r)).filter(Boolean);
+}
+
 function toBackendStatus(status = "") {
   const normalized = String(status).trim().toLowerCase();
   if (normalized === "inactive") return "Inactive";
@@ -76,7 +96,7 @@ export default function StaffEdit() {
           photo: existing.avatar,
           email: existing.email,
           phoneNo: existing.phoneNo || "",
-          role: toFormRole(existing.roles[0] || "Kitchen"),
+          roles: toFormRoles(existing.roles, "Kitchen"),
           status: existing.status,
         }}
         onCancel={() => nav(listPath)}
@@ -113,6 +133,8 @@ export default function StaffEdit() {
 
             const updateBody = {
               phoneNo: payload?.phoneNo || "",
+              role: toBackendRole(payload?.role),
+              roles: toBackendRoles(payload?.roles, payload?.role),
               status: toBackendStatus(payload?.status),
             };
 

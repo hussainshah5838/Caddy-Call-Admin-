@@ -5,6 +5,7 @@ const input =
   "w-full rounded-md border border-gray-200 bg-white px-3 py-2.5 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-600";
 const select =
   "w-full appearance-none rounded-md border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600";
+const STAFF_ROLES = ["Kitchen", "Beverage Cart", "Bar", "Runner"];
 
 export default function CourseAdminStaffUpsertForm({
   mode = "create",
@@ -17,7 +18,7 @@ export default function CourseAdminStaffUpsertForm({
     photo: null,
     email: "",
     phoneNo: "",
-    role: "Kitchen",
+    roles: ["Kitchen"],
     status: "active",
   });
   const [photoUrl, setPhotoUrl] = useState("");
@@ -25,12 +26,32 @@ export default function CourseAdminStaffUpsertForm({
 
   useEffect(() => {
     if (value) {
-      setForm((f) => ({ ...f, ...value }));
+      const nextRoles = Array.isArray(value?.roles) && value.roles.length > 0
+        ? value.roles
+        : value?.role
+        ? [value.role]
+        : [];
+      setForm((f) => ({ ...f, ...value, roles: nextRoles }));
       if (typeof value?.photo === "string") setPhotoUrl(value.photo);
     }
   }, [value]);
 
-  const canSubmit = useMemo(() => !!form.email, [form.email]);
+  const selectedRoles = Array.isArray(form.roles) ? form.roles : [];
+  const normalizedRoles = selectedRoles.filter((role) => STAFF_ROLES.includes(role));
+  const canSubmit = useMemo(
+    () => !!form.email && normalizedRoles.length > 0,
+    [form.email, normalizedRoles.length]
+  );
+
+  const toggleRole = (role) => {
+    setForm((f) => {
+      const existing = Array.isArray(f.roles) ? f.roles : [];
+      const next = existing.includes(role)
+        ? existing.filter((r) => r !== role)
+        : [...existing, role];
+      return { ...f, roles: next };
+    });
+  };
 
   return (
     <div className="mx-auto w-full max-w-5xl">
@@ -110,22 +131,19 @@ export default function CourseAdminStaffUpsertForm({
 
           <div>
             <label className="block text-[13px] font-medium text-gray-700 mb-1.5">Role</label>
-            <div className="relative">
-              <select
-                className={`${select} ${mode === "edit" ? "bg-gray-100 text-gray-500 cursor-not-allowed pr-3" : ""}`}
-                value={form.role}
-                disabled={mode === "edit"}
-                onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-              >
-                <option>Kitchen</option>
-                <option>Beverage Cart</option>
-                <option>Bar</option>
-                <option>Pro Shop</option>
-                <option>Runner</option>
-              </select>
-              {mode !== "edit" && (
-                <MdKeyboardArrowDown className="absolute right-2.5 top-2.5 h-5 w-5 text-gray-400" />
-              )}
+            <div className="rounded-md border border-gray-200 bg-white px-3 py-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {STAFF_ROLES.map((role) => (
+                  <label key={role} className="inline-flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={selectedRoles.includes(role)}
+                      onChange={() => toggleRole(role)}
+                    />
+                    <span>{role}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -156,7 +174,15 @@ export default function CourseAdminStaffUpsertForm({
             <button
               type="button"
               disabled={!canSubmit || submitting}
-              onClick={() => !submitting && canSubmit && onSubmit?.(form)}
+              onClick={() =>
+                !submitting &&
+                canSubmit &&
+                onSubmit?.({
+                  ...form,
+                  roles: normalizedRoles,
+                  role: normalizedRoles[0] || "",
+                })
+              }
               className={`rounded-md px-6 py-2.5 text-sm text-white ${
                 canSubmit && !submitting
                   ? "bg-[#0d3b2e] hover:opacity-95"

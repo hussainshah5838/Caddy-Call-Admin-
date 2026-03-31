@@ -376,7 +376,7 @@ export default function CourseAdminAccountPage() {
                 </Field>
                 <Field label="Role">
                   <Input
-                    value={user.role}
+                    value={(Array.isArray(user.roles) ? user.roles.join(", ") : "") || "N/A"}
                     className="bg-gray-100 text-gray-500 cursor-not-allowed"
                     disabled
                   />

@@ -340,7 +340,7 @@ export default function AccountPage() {
                   <Input value={user.org} disabled />
                 </Field>
                 <Field label="Role">
-                  <Input value={user.role} disabled />
+                  <Input value={(Array.isArray(user.roles) ? user.roles.join(", ") : "") || "N/A"} disabled />
                 </Field>
               </div>
             </div>

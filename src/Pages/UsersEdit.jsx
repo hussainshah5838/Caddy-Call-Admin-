@@ -19,6 +19,11 @@ function toFormRole(role = "") {
   return "Course Admin";
 }
 
+function toFormRoles(roles = [], fallbackRole = "") {
+  const source = Array.isArray(roles) && roles.length > 0 ? roles : [fallbackRole];
+  return source.map((role) => toFormRole(role)).filter(Boolean);
+}
+
 function toBackendRole(role = "") {
   const normalized = String(role).trim().toLowerCase();
   if (normalized === "course admin") return "course admin";
@@ -29,6 +34,11 @@ function toBackendRole(role = "") {
   if (normalized === "pro shop") return "pro shop";
   if (normalized === "runner") return "runner";
   return "course admin";
+}
+
+function toBackendRoles(roles = [], fallbackRole = "") {
+  const source = Array.isArray(roles) && roles.length > 0 ? roles : [fallbackRole];
+  return source.map((r) => toBackendRole(r)).filter(Boolean);
 }
 
 function toBackendStatus(status = "") {
@@ -143,7 +153,7 @@ export default function UsersEdit() {
             photo: existing.avatar,
             email: existing.email,
             phoneNo: existing.phoneNo || "",
-            role: toFormRole(existing.roles[0] || "Kitchen"),
+            roles: toFormRoles(existing.roles, "Kitchen"),
             status: existing.status,
           }}
           onCancel={() => nav(listPath)}
@@ -219,6 +229,7 @@ export default function UsersEdit() {
           phoneNo: existing.phoneNo || "",
           course: existing.course,
           role: toFormRole(existing.roles[0] || "Course Admin"),
+          roles: toFormRoles(existing.roles, "Course Admin"),
           status: existing.status,
         }}
         courseOptions={courseOptions}
@@ -258,6 +269,7 @@ export default function UsersEdit() {
               email: payload?.email || "",
               phoneNo: payload?.phoneNo || "",
               role: toBackendRole(payload?.role),
+              roles: toBackendRoles(payload?.roles, payload?.role),
               status: toBackendStatus(payload?.status),
             };
 

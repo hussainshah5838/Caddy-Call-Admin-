@@ -19,6 +19,11 @@ function toBackendRole(role = "") {
   return "course admin";
 }
 
+function toBackendRoles(roles = [], fallbackRole = "") {
+  const source = Array.isArray(roles) && roles.length > 0 ? roles : [fallbackRole];
+  return source.map((r) => toBackendRole(r)).filter(Boolean);
+}
+
 function toBackendStatus(status = "") {
   const normalized = String(status).trim().toLowerCase();
   if (normalized === "inactive") return "Inactive";
@@ -134,6 +139,7 @@ export default function UsersAdd() {
                 email: payload?.email || "",
                 phoneNo: payload?.phoneNo || "",
                 role: toBackendRole(payload?.role),
+                roles: toBackendRoles(payload?.roles, payload?.role),
                 status: toBackendStatus(payload?.status),
                 photo: photoUrl,
               };
@@ -213,6 +219,7 @@ export default function UsersAdd() {
               email: payload?.email || "",
               phoneNo: payload?.phoneNo || "",
               role: toBackendRole(payload?.role),
+              roles: toBackendRoles(payload?.roles, payload?.role),
               status: toBackendStatus(payload?.status),
               photo: photoUrl,
             };

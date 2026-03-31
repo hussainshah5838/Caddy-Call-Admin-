@@ -51,17 +51,22 @@ function toDateLabel(dateValue) {
 }
 
 function mapUserRow(user) {
+  const backendRoles = Array.isArray(user?.roles) && user.roles.length > 0
+    ? user.roles
+    : [user?.role].filter(Boolean);
+
   return {
     id: String(user?._id || ""),
     name: user?.name || "",
     email: user?.email || "",
     phoneNo: user?.phoneNo || "",
     avatar: user?.photo || toAvatar(user?.name || "User"),
-    roles: [toDisplayRole(user?.role || "")],
+    roles: backendRoles.map((role) => toDisplayRole(role)),
     course: user?.course?.courseName || "",
     status: toStatus(user?.status || ""),
     lastActivity: toDateLabel(user?.lastActivity || user?.createdAt),
-    kind: toKind(user?.role || ""),
+    kind: toKind(backendRoles[0] || ""),
+    canViewCredentials: !!user?.canViewCredentials,
   };
 }
 

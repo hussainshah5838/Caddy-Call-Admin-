@@ -5,6 +5,9 @@ import {
   MdAddAPhoto,
 } from "react-icons/md";
 
+const STAFF_ROLES = ["Kitchen", "Beverage Cart", "Bar", "Runner"];
+const SINGLE_ROLES = ["Course Admin", "Golfer"];
+
 const input =
   "w-full rounded-md border border-gray-200 bg-white px-3 py-2.5 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-600";
 const select =
@@ -23,7 +26,7 @@ export default function UserUpsertForm({
     email: "",
     phoneNo: "",
     course: "",
-    role: "Course Admin",
+    roles: ["Course Admin"],
     status: "active",
   });
   const [photoUrl, setPhotoUrl] = useState("");
@@ -31,16 +34,54 @@ export default function UserUpsertForm({
 
   useEffect(() => {
     if (value) {
-      setForm((f) => ({ ...f, ...value }));
+      const nextRoles = Array.isArray(value?.roles) && value.roles.length > 0
+        ? value.roles
+        : value?.role
+        ? [value.role]
+        : [];
+      setForm((f) => ({ ...f, ...value, roles: nextRoles }));
       if (typeof value?.photo === "string") setPhotoUrl(value.photo);
     }
   }, [value]);
 
-  const isGolfer = String(form.role).toLowerCase() === "golfer";
+  const selectedRoles = Array.isArray(form.roles) ? form.roles : [];
+  const normalizedStaffRoles = selectedRoles.filter((role) => STAFF_ROLES.includes(role));
+  const userType = selectedRoles.some((r) => SINGLE_ROLES.includes(r))
+    ? selectedRoles[0]
+    : "Staff";
+  const isGolfer = String(userType).toLowerCase() === "golfer";
   const canSubmit = useMemo(
-    () => !!form.email && (isGolfer || !!form.course),
-    [form.email, form.course, isGolfer]
+    () =>
+      !!form.email &&
+      (userType === "Staff" ? normalizedStaffRoles.length > 0 : selectedRoles.length > 0) &&
+      (isGolfer || !!form.course),
+    [form.email, form.course, isGolfer, selectedRoles.length, normalizedStaffRoles.length, userType]
   );
+
+  const setUserType = (nextType) => {
+    if (nextType === "Staff") {
+      setForm((f) => ({
+        ...f,
+        roles: f.roles.filter((r) => STAFF_ROLES.includes(r)),
+      }));
+      return;
+    }
+    setForm((f) => ({
+      ...f,
+      roles: [nextType],
+      course: nextType === "Golfer" ? "" : f.course,
+    }));
+  };
+
+  const toggleStaffRole = (role) => {
+    setForm((f) => {
+      const existing = Array.isArray(f.roles) ? f.roles : [];
+      const next = existing.includes(role)
+        ? existing.filter((r) => r !== role)
+        : [...existing, role];
+      return { ...f, roles: next };
+    });
+  };
 
   return (
     <div className="mx-auto w-full max-w-5xl">
@@ -133,26 +174,37 @@ export default function UserUpsertForm({
           </div>
 
           <div>
-            <label className="block text-[13px] font-medium text-gray-700 mb-1.5">
-              Role
-            </label>
-            <div className="relative">
-              <select
-                className={select}
-                value={form.role}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, role: e.target.value }))
-                }
-              >
-                <option>Course Admin</option>
-                <option>Golfer</option>
-                <option>Kitchen</option>
-                <option>Beverage Cart</option>
-                <option>Bar</option>
-                <option>Pro Shop</option>
-                <option>Runner</option>
-              </select>
-              <MdKeyboardArrowDown className="absolute right-2.5 top-2.5 h-5 w-5 text-gray-400" />
+            <label className="block text-[13px] font-medium text-gray-700 mb-1.5">Role</label>
+            <div className="space-y-2">
+              <div className="relative">
+                <select
+                  className={select}
+                  value={userType}
+                  onChange={(e) => setUserType(e.target.value)}
+                >
+                  <option>Staff</option>
+                  <option>Course Admin</option>
+                  <option>Golfer</option>
+                </select>
+                <MdKeyboardArrowDown className="absolute right-2.5 top-2.5 h-5 w-5 text-gray-400" />
+              </div>
+
+              {userType === "Staff" && (
+                <div className="rounded-md border border-gray-200 bg-white px-3 py-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {STAFF_ROLES.map((role) => (
+                      <label key={role} className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={selectedRoles.includes(role)}
+                          onChange={() => toggleStaffRole(role)}
+                        />
+                        <span>{role}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -209,7 +261,18 @@ export default function UserUpsertForm({
             </button>
             <button
               disabled={!canSubmit || submitting}
-              onClick={() => !submitting && canSubmit && onSubmit?.(form)}
+              onClick={() =>
+                !submitting &&
+                canSubmit &&
+                onSubmit?.({
+                  ...form,
+                  roles: userType === "Staff" ? normalizedStaffRoles : selectedRoles,
+                  role:
+                    userType === "Staff"
+                      ? normalizedStaffRoles[0] || ""
+                      : selectedRoles[0] || "",
+                })
+              }
               className={`rounded-md px-6 py-2.5 text-sm text-white ${
                 canSubmit && !submitting
                   ? "bg-[#0d3b2e] hover:opacity-95"

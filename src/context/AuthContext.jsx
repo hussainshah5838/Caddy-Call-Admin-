@@ -11,6 +11,14 @@ function toDisplayRole(role = "") {
   return role;
 }
 
+function normalizeBackendRoles(user = {}) {
+  if (Array.isArray(user?.roles) && user.roles.length > 0) {
+    return [...new Set(user.roles.map((r) => String(r || "").trim().toLowerCase()).filter(Boolean))];
+  }
+  const fallbackRole = String(user?.role || "").trim().toLowerCase();
+  return fallbackRole ? [fallbackRole] : [];
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
@@ -39,8 +47,9 @@ export function AuthProvider({ children }) {
       throw new Error(data?.message || "Invalid credentials. Please try again.");
     }
 
-    const backendRole = String(data?.user?.role || "").toLowerCase();
-    if (!["superadmin", "course admin"].includes(backendRole)) {
+    const backendRoles = normalizeBackendRoles(data?.user || {});
+    const backendRole = backendRoles[0] || "";
+    if (!backendRoles.some((role) => ["superadmin", "course admin"].includes(role))) {
       throw new Error("Only Super Admin and Course Admin can access this website.");
     }
 
@@ -49,11 +58,11 @@ export function AuthProvider({ children }) {
       name: data?.user?.name || String(email || "admin").split("@")[0],
       email: data?.user?.email || email,
       avatar: "public/images/admin/a1.jpg",
-      roles: [toDisplayRole(backendRole)],
+      roles: backendRoles.map((role) => toDisplayRole(role)),
       course: data?.user?.course?.courseName || "",
       status: "active",
       kind: "admin",
-      backendRole,
+      backendRole: backendRoles.includes("course admin") ? "course admin" : backendRole,
       token: data?.token || "",
     };
 

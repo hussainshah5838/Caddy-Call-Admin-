@@ -299,6 +299,10 @@ export default function useCourseAdminProShop() {
     setAssets((a) => [{ id, label: "New Asset", src }, ...a]);
   }, []);
 
+  const reload = useCallback(() => {
+    setRefreshToken((x) => x + 1);
+  }, []);
+
   return {
     filtered,
     loading,
@@ -315,5 +319,6 @@ export default function useCourseAdminProShop() {
     remove,
     assets,
     upsertAsset,
+    reload,
   };
 }
